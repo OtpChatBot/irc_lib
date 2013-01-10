@@ -84,9 +84,9 @@ handle_info({tcp, Socket, Data}, State) ->
 			% Send pong
 			gen_tcp:send(Socket, "PONG " ++ State#state.host);
 		% ok we got incoming message
-		[_User, "PRIVMSG", _Channel | Message] ->
+		[_User, "PRIVMSG", _Channel | _Message] ->
 			% Get incoming message
-			IncomingMessage = get_message(binary_to_list(State#state.channel), Data),
+			IncomingMessage = get_message(binary_to_list(State#state.irc_channel), Data),
 			% Send incomming message to callback
 			State#state.callback ! {incoming_message, IncomingMessage};
 		_ ->
@@ -126,6 +126,6 @@ code_change(_OldVsn, State, _Extra) ->
 %% @doc Get message data from irc `PRIVMSG` response
 -spec get_message(ChannelName :: string(), String :: string()) -> string().
 get_message(ChannelName, String) ->
-    StartPosition = string:str(TestString, Channel),
+    StartPosition = string:str(String, ChannelName),
     ChannelNameLength = length(ChannelName),
     string:substr(String, StartPosition + ChannelNameLength + 2).
