@@ -30,8 +30,6 @@
 
 -define(PORT, 6667).
 
-
-
 start_link(CallbackModule, Host, Channel, Nick) ->
     gen_server:start_link(?MODULE, [CallbackModule, Host, Channel, Nick], []).
 
@@ -84,11 +82,14 @@ handle_info({tcp, Socket, Data}, State) ->
 			% Send pong
 			gen_tcp:send(Socket, "PONG " ++ State#state.host);
 		% ok we got incoming message
-		[_User, "PRIVMSG", _Channel | _Message] ->
+		[FromUser, "PRIVMSG", _Channel | _Message] ->
 			% Get incoming message
 			IncomingMessage = get_message(binary_to_list(State#state.irc_channel), Data),
 			% Send incomming message to callback
-			State#state.callback ! {incoming_message, IncomingMessage};
+			State#state.callback ! {incoming_message, FromUser, 
+			                        binary_to_list(State#state.irc_channel), 
+			                        binary_to_list(State#state.host), 
+			                        IncomingMessage};
 		_ ->
 			pass
 	end,

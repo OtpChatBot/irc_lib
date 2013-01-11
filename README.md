@@ -66,8 +66,12 @@ handle_cast(_Msg, State) ->
     {noreply, State}.
 
 %% @doc Here we will receive incoming message from other users
+%% FromUser :: string()
+%% Channel :: string()
+%% Host :: string()
 %% IncomingMessage :: string()
-handle_info({incoming_message, IncomingMessage}, State) ->
+%%
+handle_info({incoming_message, FromUser, Channel, Host, IncomingMessage}, State) ->
 	io:format("Incoming message: ~p~n", [IncomingMessage]),
 	{noreply, State};
 
