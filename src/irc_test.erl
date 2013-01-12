@@ -30,8 +30,7 @@ handle_call(_Request, _From, State) ->
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
-handle_info({incoming_message, _FromUser, _Channel, _
-    Host, IncomingMessage}, State) ->
+handle_info({incoming_message, _FromUser, _Channel, _Host, IncomingMessage}, State) ->
 	io:format("Incoming message: ~p~n", [IncomingMessage]),
 	{noreply, State};
 
