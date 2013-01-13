@@ -80,7 +80,7 @@ handle_info({tcp, Socket, Data}, State) ->
 	case string:tokens(Data, " ") of
 		["PING" | _] ->
 			% Send pong
-			gen_tcp:send(Socket, "PONG " ++ State#state.host);
+			gen_tcp:send(Socket, "PONG :" ++ binary_to_list(State#state.host) ++ "\r\n");
 		% ok we got incoming message
 		[FromUser, "PRIVMSG", _Channel | _Message] ->
 			% Get incoming message
