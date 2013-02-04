@@ -20,7 +20,7 @@ start_link() ->
 
 init([]) ->
 	irc_lib_sup:start_link(),
-	irc_lib_sup:start_irc_client(?MODULE, <<"irc.freenode.net">>, <<"#erlang">>, <<"checker-erl">>),
+	irc_lib_sup:start_irc_client(?MODULE, <<"irc.freenode.net">>, 5667, <<"#erlang">>, <<"some-user-name">>, false, 1000),
 
     {ok, #state{}}.
  
@@ -30,8 +30,8 @@ handle_call(_Request, _From, State) ->
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
-handle_info({incoming_message, _FromUser, _Channel, _Host, IncomingMessage}, State) ->
-	io:format("Incoming message: ~p~n", [IncomingMessage]),
+handle_info({incoming_message, From, IncomingMessage}, State) ->
+	io:format("Incoming message: ~p ~p ~n", [IncomingMessage, From]),
 	{noreply, State};
 
 handle_info(_Info, State) ->

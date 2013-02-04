@@ -3,7 +3,7 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/0, start_irc_client/4]).
+-export([start_link/0, start_irc_client/7]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -19,21 +19,27 @@ start_link() ->
 %% @doc Start new irc client
 %% @end
 -spec start_irc_client(CallbackModule :: atom() | pid(), 
-	                   Host :: binary(), 
-	                   Channel :: binary(), 
-	                   Nick :: binary()) 
+                       Host :: binary(),
+                       Port :: integer(),
+                       Channel :: {binary(), binary()}, 
+                       Nick :: binary(),
+                       UseSsl :: boolean(),
+                       ReconnectTimeout :: integer()) 
                        -> {ok, Pid :: pid()} | {error, Reason :: term()}.
-start_irc_client(CallbackModule, Host, Channel, Nick) ->
+start_irc_client(CallbackModule, Host, Port, Channel, Nick, UseSsl, ReconnectTimeout) ->
+    % Check use ssl or not
+    SocketMod = case UseSsl of
+      true -> ssl;
+      false -> gen_tcp
+    end,
+    % irc child
+    Child = {irc_lib_client, 
+                {irc_lib_client, start_link, [CallbackModule, Host, Port, SocketMod, Channel, Nick, ReconnectTimeout]},
+                 temporary, 2000, worker, []
+             },
     % run new irc client
-    supervisor:start_child(?MODULE, [CallbackModule, Host, Channel, Nick]).
+    supervisor:start_child(?MODULE, Child).
 
 init([]) ->
-	% irc client
-    ChildSpec = [
-    	{irc_lib_client, 
-   			{irc_lib_client, start_link, []},
-    	 	 temporary, 2000, worker, []
-    	}],
-
     % init
-    {ok,{{simple_one_for_one, 10, 60}, ChildSpec}}.
+    {ok,{{one_for_one, 2, 60}, []}}.

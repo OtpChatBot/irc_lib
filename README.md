@@ -13,6 +13,8 @@ Features
   * Auto PING/PONG
   * Send irc message api
   * Callbacks
+  * SSL support
+  * Reconnect ability
   * Dependency free
 
 Usage
@@ -54,9 +56,9 @@ start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 init([]) ->
-	% Start new irc client
-	irc_lib_sup:start_irc_client(?MODULE, <<"irc.freenode.net">>, <<"#erlang">>, <<"some-user-name">>),
-	% init state
+  irc_lib_sup:start_link(),
+  irc_lib_sup:start_irc_client(?MODULE, <<"irc.freenode.net">>, 5667, <<"#erlang">>, <<"some-user-name">>, false, 1000),
+
     {ok, #state{}}.
  
 handle_call(_Request, _From, State) ->
@@ -65,15 +67,9 @@ handle_call(_Request, _From, State) ->
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
-%% @doc Here we will receive incoming message from other users
-%% FromUser :: string()
-%% Channel :: string()
-%% Host :: string()
-%% IncomingMessage :: string()
-%%
-handle_info({incoming_message, FromUser, Channel, Host, IncomingMessage}, State) ->
-	io:format("Incoming message: ~p~n", [IncomingMessage]),
-	{noreply, State};
+handle_info({incoming_message, From, IncomingMessage}, State) ->
+  io:format("Incoming message: ~p ~p ~n", [IncomingMessage, From]),
+  {noreply, State};
 
 handle_info(_Info, State) ->
     {noreply, State}.
@@ -83,8 +79,6 @@ terminate(_Reason, _State) ->
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
- 
-%% Internal functions
 ```
 
 Also sending message to irc channel:
