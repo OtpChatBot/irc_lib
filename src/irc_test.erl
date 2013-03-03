@@ -20,8 +20,7 @@ start_link() ->
 
 init([]) ->
 	irc_lib_sup:start_link(),
-	irc_lib_sup:start_irc_client(?MODULE, <<"irc.freenode.net">>, 5667, <<"#erlang">>, <<"some-user-name">>, false, 1000),
-
+	irc_lib_sup:start_irc_client(?MODULE, <<"irc.freenode.net">>, 5667, false, <<"#erlang">>, <<"some-user-name">>, false, 1000),
     {ok, #state{}}.
  
 handle_call(_Request, _From, State) ->
