@@ -136,13 +136,44 @@ handle_info({tcp_error, _Socket, Reason}, State) ->
     % try reconnect
     try_reconnect(State);
     
+%% @doc reconnect
+handle_info(reconnect, State) ->
+    % Close socket
+    (State#state.socket_mod):close(State#state.socket),
+    % Try reconnect
+    gen_server:cast(self(), {connect, State#state.host, State#state.port}),
+    % return
+    {noreply, State};
+    
 %% @doc Incoming message
 handle_info({_, Socket, Data}, State) ->
     % Parse incoming data
     case string:tokens(Data, " ") of
         ["PING" | PongHost] ->
             % Send pong
-            (State#state.socket_mod):send(Socket, "PONG " ++ PongHost ++ "\r\n");    
+            (State#state.socket_mod):send(Socket, "PONG " ++ PongHost ++ "\r\n");
+        ["ERROR" | Err] ->
+            % log
+            lager:info("Error: ~p", [Err]),
+            % try reconnect if error
+            try_reconnect(State);
+        % Wrong server
+        [_, "402" | _] ->
+            lager:info("Wrong server address ~p", [State#state.host]);
+        % Wrong server
+        [_, "403" | _] ->
+            lager:info("Wrong channel ~p", [State#state.irc_channel]);
+        % No nickname given
+        [_, "432" | _] ->
+            lager:info("No nickname given");
+        % Nick already in use
+        [_, "433" | _] ->
+            % Log
+            lager:info("This nickname already in use"),
+            % Make new nickname
+            NewNickName = binary_to_list(State#state.login) ++ integer_to_list(lists:last(binary_to_list(State#state.login)) + 1),
+            % try reconnect with new name
+            try_reconnect(State#state{login = list_to_binary(NewNickName), socket = Socket});
         [User, "PRIVMSG", To | Message] ->
             % Get incoming message
             [_ | IncomingMessage] = string:join(Message, " "),
@@ -159,12 +190,13 @@ handle_info({_, Socket, Data}, State) ->
                 % this is private message
                 _ ->
                     State#state.callback ! {incoming_message, IncomingMessage, From}
-            end;
+            end,
+            % return
+            {noreply, State#state{socket = Socket}};
         _ ->
-            pass
-    end,
-    % return
-    {noreply, State#state{socket = Socket}}.
+            % return
+            {noreply, State#state{socket = Socket}}
+    end.
 
 terminate(_Reason, State) ->
     % Check active socket
@@ -215,16 +247,13 @@ join_channel(M, Socket, Chan, ChanKey) ->
 
 %% @doc try reconnect
 -spec try_reconnect(State :: #state{}) -> {normal, stop, State} | {noreply, State}.
-try_reconnect(#state{reconnect_timeout = Timeout, host = Host, port = Port} = State) ->
+try_reconnect(#state{reconnect_timeout = Timeout} = State) ->
     case Timeout > 0 of
-        true ->
-            % no need in reconnect
-            {normal, stop, State};
         false ->
-            % sleep
-            timer:sleep(Timeout),
-            % Try reconnect
-            gen_server:cast(self(), {connect, Host, Port}),
+            % no need in reconnect
+            {stop, normal, State};
+        true ->
+            timer:send_after(Timeout, self(), reconnect),
             % return
             {noreply, State}
     end.
