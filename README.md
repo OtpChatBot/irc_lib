@@ -9,12 +9,10 @@ Features
 ========
 
   * Simple connect to irc channel
-  * OTP overall
-  * Auto PING/PONG
-  * Send irc message api
   * Callbacks
   * SSL support
   * Reconnect ability
+  * Multichannel support
   * Dependency free
 
 Usage
@@ -57,7 +55,7 @@ start_link() ->
 
 init([]) ->
 	irc_lib_sup:start_link(),
-	irc_lib_sup:start_irc_client(?MODULE, <<"irc.freenode.net">>, 5667, false, <<"#erlang">>, <<"some-user-name">>, false, 1000),
+	irc_lib_sup:start_irc_client(?MODULE, <<"irc.freenode.net">>, 5667, false, [{<<"#erlang">>, ""}, {<<"#WeberMVC">>, ""}] <<"some-user-name">>, false, 1000),
     {ok, #state{}}.
  
 handle_call(_Request, _From, State) ->
